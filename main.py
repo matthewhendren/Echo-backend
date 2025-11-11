@@ -10,10 +10,10 @@ from bs4 import BeautifulSoup
 # ----------------------------------------------------------
 app = FastAPI()
 
-# Allow connections from your iPhone Shortcut, Hoppscotch, etc.
+# Allow your Shortcut, browser, or Hoppscotch to connect
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],   # allow from anywhere
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -22,9 +22,8 @@ app.add_middleware(
 # Initialize OpenAI client
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-
 # ----------------------------------------------------------
-# MODELS
+# DATA MODEL
 # ----------------------------------------------------------
 class PageInput(BaseModel):
     url: str
@@ -35,23 +34,30 @@ class PageInput(BaseModel):
 # ----------------------------------------------------------
 @app.get("/")
 def root():
-    return {"ok": True, "message": "Echo API is running 🚀"}
+    return {"ok": True, "message": "Echo API is live 🚀"}
 
 
 @app.post("/summarize")
 def summarize(body: PageInput):
-    # Step 1: Fetch HTML
+    # Step 1: Fetch the webpage HTML with browser-style headers
     try:
-        response = requests.get(body.url, timeout=15)
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/120.0.0.0 Safari/537.36"
+            )
+        }
+        response = requests.get(body.url, headers=headers, timeout=15)
         response.raise_for_status()
         html = response.text
     except Exception as e:
         return {"summary": f"Could not fetch the webpage: {str(e)}"}
 
-    # Step 2: Try Trafilatura
+    # Step 2: Try to extract readable text
     text = trafilatura.extract(html)
 
-    # Step 3: Fallback to BeautifulSoup if needed
+    # Step 3: Fallback to BeautifulSoup if Trafilatura fails or text too short
     if not text or len(text.strip()) < 200:
         soup = BeautifulSoup(html, "html.parser")
         paragraphs = [p.get_text() for p in soup.find_all("p")]
@@ -60,18 +66,18 @@ def summarize(body: PageInput):
     if not text.strip():
         return {"summary": "No readable text found on that webpage."}
 
-    # Step 4: Build prompt
+    # Step 4: Build summarization prompt
     prompt = f"""
     Summarize this webpage in 4–6 short sentences that sound natural when spoken aloud.
-    Keep it concise and friendly. Then provide 2–3 quick key points at the end.
+    Keep it concise, friendly, and clear. Then include 2–3 short bullet key points at the end.
     TEXT:
     {text[:12000]}
     """
 
-    # Step 5: Summarize with OpenAI
+    # Step 5: Generate summary with OpenAI
     try:
         resp = client.chat.completions.create(
-            model="gpt-4o-mini",  # fast + affordable
+            model="gpt-4o-mini",   # fast + affordable model
             messages=[{"role": "user", "content": prompt}],
             temperature=0.5,
         )
@@ -83,7 +89,7 @@ def summarize(body: PageInput):
 
 
 # ----------------------------------------------------------
-# ENTRY POINT FOR RENDER
+# ENTRY POINT (REQUIRED FOR RENDER)
 # ----------------------------------------------------------
 if __name__ == "__main__":
     import uvicorn

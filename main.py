@@ -4,6 +4,7 @@ from pydantic import BaseModel
 import requests, os, trafilatura
 from openai import OpenAI
 from bs4 import BeautifulSoup
+from urllib.parse import unquote  # ✅ NEW — handles encoded URLs
 
 # ----------------------------------------------------------
 # APP SETUP
@@ -39,6 +40,9 @@ def root():
 
 @app.post("/summarize")
 def summarize(body: PageInput):
+    # ✅ Decode URL (important for echo://summarize?url=... links)
+    decoded_url = unquote(body.url)
+    
     # Step 1: Fetch the webpage HTML with browser-style headers
     try:
         headers = {
@@ -48,7 +52,7 @@ def summarize(body: PageInput):
                 "Chrome/120.0.0.0 Safari/537.36"
             )
         }
-        response = requests.get(body.url, headers=headers, timeout=15)
+        response = requests.get(decoded_url, headers=headers, timeout=15)
         response.raise_for_status()
         html = response.text
     except Exception as e:

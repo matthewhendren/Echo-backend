@@ -5,3 +5,4 @@ pydantic
 openai
 requests
 lxml_html_clean
+beautifulsoup4

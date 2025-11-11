@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+trafilatura
+pydantic
+openai
+requests
+lxml_html_clean

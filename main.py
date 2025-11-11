@@ -68,7 +68,7 @@ def summarize(body: PageInput):
 
     # Step 4: Build summarization prompt
     prompt = f"""
-    Summarize this webpage in 4–6 short sentences that sound natural when spoken aloud.
+    Summarize this webpage in 1-2 short sentences that sound natural when spoken aloud.
     Keep it concise, friendly, and clear. Then include 2–3 short bullet key points at the end.
     TEXT:
     {text[:12000]}

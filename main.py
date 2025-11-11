@@ -1,59 +1,61 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
-import trafilatura, requests, os
-from openai import OpenAI
-
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+import requests, os, trafilatura
+from openai import OpenAI
 
 app = FastAPI()
 
+# ✅ Allow requests from anywhere (for Safari Shortcuts)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # You can later lock this down
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app = FastAPI()
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-class Body(BaseModel):
+class PageInput(BaseModel):
     url: str
 
 @app.get("/")
 def root():
-    return {"ok": True}
+    return {"ok": True, "message": "Echo API running"}
 
 @app.post("/summarize")
-def summarize(body: Body):
-    # 1) fetch web page
-    html = requests.get(body.url, timeout=15).text
+def summarize(body: PageInput):
+    try:
+        html = requests.get(body.url, timeout=15).text
+        text = trafilatura.extract(html) or ""
+    except Exception:
+        return {"summary": "Could not fetch or extract text from that page."}
 
-    # 2) extract readable article text
-    text = trafilatura.extract(html) or ""
-    if not text.strip():
-        text = f"URL only: {body.url}"
+    if not text:
+        return {"summary": "No readable text found on that webpage."}
 
-    # 3) summarize (short, listenable)
     prompt = f"""
-Summarize this web page for listening.
-Keep it 4–6 short sentences, plain English.
-Then add 3 bullet key points.
-Text:
-{text[:12000]}
-"""
-    resp = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.5,
-    )
-    summary = resp.choices[0].message.content.strip()
-    return {"summary": summary}
+    Summarize this webpage in 4–6 short sentences suitable to be read aloud.
+    Keep it simple and natural:
+    {text[:12000]}
+    """
 
+    try:
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.5,
+        )
+        summary = resp.choices[0].message.content.strip()
+        return {"summary": summary}
+    except Exception as e:
+        return {"summary": f"Error during summarization: {str(e)}"}
+
+
+# ✅ Ensure Render runs on correct port
 if __name__ == "__main__":
-    import os
     import uvicorn
-
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run("main:app", host="0.0.0.0", port=port)
+

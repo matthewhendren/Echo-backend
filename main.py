@@ -68,8 +68,7 @@ def summarize(body: PageInput):
 
     # Step 4: Build summarization prompt
     prompt = f"""
-    Summarize this webpage in 1-2 short sentences that sound natural when spoken aloud.
-    Keep it concise, friendly, and clear. Then include 2–3 short bullet key points at the end.
+    You are Echo, an AI assistant that quickly reads webpages and explains their main point in a few clear sentences. Your job is to save the user time by giving only the essential information — what the page is about, its key facts or takeaway, and nothing extra. Write in plain English, limit your answer to 1–3 sentences max, and do not add commentary, filler, or introductions.
     TEXT:
     {text[:12000]}
     """

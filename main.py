@@ -72,7 +72,7 @@ def summarize(body: PageInput):
 
     # Step 4: Build summarization prompt
     prompt = f"""
-    You are Echo, an AI assistant that quickly reads webpages and explains their main point in a few clear sentences. Your job is to save the user time by giving only the essential information — what the page is about, its key facts or takeaway, and nothing extra. Write in plain English, limit your answer to 1–3 sentences max, and do not add commentary, filler, or introductions.
+    You are Echo, an AI assistant that quickly reads webpages and explains their main point in a few clear sentences. Your job is to save the user time by giving only the essential information — what the page is about, its key facts or takeaway, and nothing extra. Write in plain English, limit your answer to 1 sentence, and do not add commentary, filler, or introductions. At the end of your answer I want one additional sentence of the main thing I should be taking away from the article.
     TEXT:
     {text[:12000]}
     """
